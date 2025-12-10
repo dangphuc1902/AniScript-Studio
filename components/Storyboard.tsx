@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Scene, Project } from '../types';
 import { generateScenePreview } from '../services/geminiService';
-import { PlayCircle, Image as ImageIcon, Edit2, Save, RefreshCw, Wand2, Check } from 'lucide-react';
+import { PlayCircle, Image as ImageIcon, Edit2, Save, RefreshCw, Wand2, Check, Download, Loader2 } from 'lucide-react';
+import JSZip from 'jszip';
 
 interface StoryboardProps {
   project: Project;
@@ -12,6 +13,7 @@ export const Storyboard: React.FC<StoryboardProps> = ({ project, onUpdateProject
   const [editingSceneId, setEditingSceneId] = useState<string | null>(null);
   const [editPromptValue, setEditPromptValue] = useState("");
   const [loadingImages, setLoadingImages] = useState<Record<string, boolean>>({});
+  const [isZipping, setIsZipping] = useState(false);
 
   const handleEditClick = (scene: Scene) => {
     setEditingSceneId(scene.id);
@@ -41,15 +43,72 @@ export const Storyboard: React.FC<StoryboardProps> = ({ project, onUpdateProject
     }
   };
 
+  const handleDownloadAssets = async () => {
+    setIsZipping(true);
+    try {
+      const zip = new JSZip();
+      let scriptContent = `Project: ${project.name}\nStyle: ${project.style}\nType: ${project.type}\nStory Idea: ${project.storyIdea}\n\n================================================\n\n`;
+
+      project.scenes.forEach((scene) => {
+        const imageName = `scene_${String(scene.sceneNumber).padStart(3, '0')}.png`;
+        
+        scriptContent += `SCENE ${scene.sceneNumber}\n`;
+        scriptContent += `Duration: ${scene.duration}\n`;
+        scriptContent += `Script: "${scene.script}"\n`;
+        scriptContent += `Visual Prompt: ${scene.visualPrompt}\n`;
+        scriptContent += `Generated Image File: ${scene.generatedImageUrl ? imageName : '[Not Generated Yet]'}\n`;
+        scriptContent += `------------------------------------------------\n\n`;
+
+        if (scene.generatedImageUrl) {
+          // Remove data:image/png;base64, prefix to get clean base64 string
+          const base64Data = scene.generatedImageUrl.split(',')[1];
+          if (base64Data) {
+            zip.file(imageName, base64Data, { base64: true });
+          }
+        }
+      });
+
+      zip.file("script_and_prompts.txt", scriptContent);
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      
+      // Trigger download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_assets.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+    } catch (error) {
+      console.error("Export failed", error);
+      alert("Failed to export assets.");
+    } finally {
+      setIsZipping(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-20">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
           <Wand2 className="text-purple-400" /> Storyboard & Prompts
         </h2>
-        <span className="text-sm text-gray-500 bg-gray-900 px-3 py-1 rounded-full border border-gray-800">
-          {project.scenes.length} Scenes
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500 bg-gray-900 px-3 py-1 rounded-full border border-gray-800">
+            {project.scenes.length} Scenes
+          </span>
+          <button 
+            onClick={handleDownloadAssets}
+            disabled={isZipping || project.scenes.length === 0}
+            className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg transition-colors"
+          >
+            {isZipping ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            Download Assets
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-8">

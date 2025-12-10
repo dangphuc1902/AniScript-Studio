@@ -22,7 +22,7 @@ export const generateStoryScenes = async (
     .join('\n');
 
   const systemInstruction = `You are an expert animation director and screenwriter for YouTube.
-  Your task is to take a story idea and break it down into scenes.
+  Your task is to take a story idea and break it down into a highly DETAILED sequence of scenes.
   
   Format Constraints:
   - Video Type: ${type}
@@ -32,8 +32,11 @@ export const generateStoryScenes = async (
   ${characterContext}
   
   Instructions:
-  1. Create a compelling script suitable for the video type (fast-paced for Shorts, well-paced for Long).
-  2. For 'visualPrompt', write a highly detailed image generation prompt. 
+  1. Create a compelling script suitable for the video type.
+  2. **CRITICAL: Break the story down into as many scenes as possible to create a fluid visual flow. Do not summarize multiple actions into one scene. Every camera angle change or character action should be a new scene.**
+     - For Shorts: Generate at least 15-20 scenes.
+     - For Long videos: Generate at least 30-50 scenes.
+  3. For 'visualPrompt', write a highly detailed image generation prompt. 
      - IMPORTANT: You MUST inject the specific visual features of the characters (e.g., "Bella, a tall woman with long purple braid") into the prompt every time the character appears so the image generator knows how to draw them.
      - Include the art style (${style}) in every visual prompt.
      - Describe lighting, camera angle, and background.
