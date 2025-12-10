@@ -1,0 +1,5 @@
+{
+  "name": "AniScript Studio",
+  "description": "A comprehensive AI-powered storyboard and script generation tool for YouTube Shorts and Long-form animation videos. Features character consistency management, style selection (Disney, Anime, etc.), and visual prompt editing.",
+  "requestFramePermissions": []
+}
